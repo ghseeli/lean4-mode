@@ -361,10 +361,13 @@ otherwise return '/path/to/lean --server'."
 ;; delay in case the server sends diagnostics excessively frequently.
 (defvar lean4--diagnostics-pending nil)
 (defun lean4--handle-diagnostics (server uri)
-  (setq lean4--diagnostics-pending nil)
-  (lean4-with-uri-buffers server uri
-    (lean4-info-buffer-refresh)
-    (flymake-start)))
+  (if (jsonrpc--sync-request-alist server)
+      ;; Wait another moment, jsonrpc is anxious
+      (run-with-timer 0.05 nil #'lean4--handle-diagnostics server uri)
+    (setq lean4--diagnostics-pending nil)
+    (lean4-with-uri-buffers server uri
+      (lean4-info-buffer-refresh)
+      (flymake-start))))
 
 (cl-defmethod eglot-handle-notification :after ((server lean4-eglot-lsp-server)
                                                 (_method (eql textDocument/publishDiagnostics))
