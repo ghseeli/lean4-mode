@@ -51,9 +51,7 @@
 (require 'lean4-settings)
 (require 'lean4-syntax)
 (require 'lean4-info)
-(require 'lean4-dev)
 (require 'lean4-fringe)
-(require 'lean4-lake)
 
 ;; Silence byte-compiler
 (defvar lsp--cur-version)
@@ -81,33 +79,6 @@ If LAKE-NAME is nonempty, then prepend \"LAKE-NAME env\" to the command
 The new file has prefix PREFIX (defaults to `flymake') and the same extension as
 FILE-NAME."
   (make-temp-file (or prefix "flymake") nil (f-ext file-name)))
-
-(defun lean4-execute (&optional arg)
-  "Execute Lean in the current buffer with an optional argument ARG."
-  (interactive)
-  (when (called-interactively-p 'any)
-    (setq arg (read-string "arg: " arg)))
-  (let* ((cc compile-command)
-	 (dd default-directory)
-	 (use-lake (lean4-lake-find-dir))
-	 (default-directory (if use-lake (lean4-lake-find-dir) dd))
-         (target-file-name
-          (or
-           (buffer-file-name)
-           (flymake-proc-init-create-temp-buffer-copy 'lean4-create-temp-in-system-tempdir))))
-    (compile (lean4-compile-string
-	      (if use-lake (shell-quote-argument (f-full (lean4-get-executable lean4-lake-name))) nil)
-              (shell-quote-argument (f-full (lean4-get-executable lean4-executable-name)))
-              (or arg "")
-              (shell-quote-argument (f-full target-file-name))))
-    ;; restore old value
-    (setq compile-command cc)
-    (setq default-directory dd)))
-
-(defun lean4-std-exe ()
-  "Execute Lean in the current buffer."
-  (interactive)
-  (lean4-execute))
 
 (defun lean4-refresh-file-dependencies ()
   "Refresh the file dependencies.
@@ -140,7 +111,6 @@ tab completion (if configured)."
 (easy-menu-define lean4-mode-menu lean4-mode-map
   "Menu for the Lean major mode."
   `("Lean 4"
-    ["Execute lean"         lean4-execute                      t]
     ["Toggle info display"  lean4-toggle-info                  t]
     ["List of errors"       flymake-show-buffer-diagnostics flymake-mode]
     ["Restart lean process" eglot-reconnect                    t]

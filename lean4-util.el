@@ -27,9 +27,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'f)
-(require 's)
-(require 'dash)
 (require 'lean4-settings)
 
 (defun lean4-setup-rootdir ()
@@ -123,16 +120,6 @@ timer and kill the execution of this function."
             entries))
           (t (setq result entries)))
     result))
-
-;; The following function is a slightly modified version of
-;; f-files function written by Johan Andersson The URL is at
-;; https://github.com/rejeep/f.el/blob/master/f.el#L478-L481
-(defun lean4-find-files (path &optional fn recursive)
-  "Find all files in PATH.
-Optionally filter files satisfying predicate FN and/or use RECURSIVE search."
-  ;; It calls lean4--collect-entries instead of f--collect-entries
-  (let ((files (-select 'f-file? (lean4--collect-entries path recursive))))
-    (if fn (-select fn files) files)))
 
 (defmacro lean4-with-uri-buffers (server uri &rest body)
   (declare (indent 2)
