@@ -289,7 +289,7 @@ Invokes `lean4-mode-hook'."
   (if (fboundp 'electric-indent-local-mode)
       (electric-indent-local-mode -1))
   ;; (abbrev-mode 1)
-  (when buffer-file-name
+  (when buffer-file-truename
     (let ((lean4--workspace-message-enabled t))
       (if (lean4-project-find buffer-file-truename)
           (progn
