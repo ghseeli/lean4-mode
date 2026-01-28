@@ -40,7 +40,6 @@
 (require 'quail)
 (require 'cl-lib)
 (require 'subr-x)
-(require 'dash)
 (require 'map)
 
 ;; Quail is quite stateful, so be careful when editing this code.  Note
@@ -305,36 +304,4 @@ Suitable for use in the :set field of `defcustom'."
 (cl-eval-when (load eval)
   (lean4-input-setup))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Administrative details
-
 (provide 'lean4-input)
-;;; lean4-input.el ends here
-
-(defun lean4-input-export-translations ()
-  "Export the current translations in a javascript format.
-Print (input, output) pairs in Javascript format to the buffer
-*lean4-translations*.  The output can be copy-pasted to
-leanprover.github.io/tutorial/js/input-method.js"
-  (interactive)
-  (with-current-buffer
-      (get-buffer-create "*lean4-translations*")
-    (let ((exclude-list '("\\newline")))
-      (insert "var corrections = {")
-      (--each
-          (--filter (not (member (car it) exclude-list))
-                    (lean4-input-get-translations "Lean"))
-        (let* ((input (substring (car it) 1))
-               (outputs (cdr it)))
-          (insert (format "%s:\"" (prin1-to-string input)))
-          (cond ((vectorp outputs)
-                 (insert (elt outputs 0)))
-                (t (insert-char outputs)))
-          (insert (format "\",\n"))))
-      (insert "};"))))
-
-(defun lean4-input-export-translations-to-stdout ()
-  "Print current translations to stdout."
-  (lean4-input-export-translations)
-  (with-current-buffer "*lean4-translations*"
-    (princ (buffer-string))))
