@@ -105,7 +105,7 @@ The buffer is supposed to be the *Lean Goal* buffer."
 (defun lean4-info--diagnostics ()
   (nreverse
    (cl-loop for diag in (flymake-diagnostics)
-            when (cdr (assoc 'eglot-lsp-diag (eglot--diag-data diag)))
+            when (cdr (assoc 'eglot-lsp-diag (flymake-diagnostic-data diag)))
             collect it)))
 
 (defun lean4-info--diagnostic-start (diagnostic)
