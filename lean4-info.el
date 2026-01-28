@@ -31,7 +31,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'dash)
 (require 'lean4-syntax)
 (require 'lean4-settings)
 (require 'lean4-util)
@@ -73,10 +72,11 @@ Also choose settings used for the *Lean Goal* buffer."
 (defun lean4-toggle-info-buffer (buffer)
   "Create or delete BUFFER.
 The buffer is supposed to be the *Lean Goal* buffer."
-  (-if-let (window (get-buffer-window buffer))
-      (quit-window nil window)
-    (lean4-ensure-info-buffer buffer)
-    (display-buffer buffer)))
+  (let ((window (get-buffer-window buffer)))
+    (if window
+        (quit-window nil window)
+      (lean4-ensure-info-buffer buffer)
+      (display-buffer buffer))))
 
 (defcustom lean4-info-refresh-even-if-invisible nil
   "If non-nil, refresh the info buffer even if it is not visible."
@@ -140,37 +140,53 @@ The buffer is supposed to be the *Lean Goal* buffer."
                     (magit-insert-heading (format "%d:%d" (1+ line) character))
                     (insert message "\n")))))))))))
 
+(defmacro lean4-info--split (head tail predicate)
+  (declare (indent 2)
+           (debug (symbolp symbolp form)))
+  (let ((previous (make-symbol "previous")))
+    `(let (,previous)
+       (setq ,tail ,head)
+       (while (and ,tail (funcall ,predicate (car ,tail)))
+         (setq ,previous ,tail
+               ,tail (cdr ,tail)))
+       (if ,previous
+           (setcdr ,previous nil)
+         (setq ,head nil)))))
+
 (defun lean4-info-buffer-redisplay ()
   (let ((inhibit-message t)
         (inhibit-read-only t))
     (when (lean4-info-buffer-active lean4-info-buffer-name)
-      (-let* ((deactivate-mark)         ; keep transient mark
-              (line (save-restriction (widen) (1- (line-number-at-pos nil t))))
-              (errors (lean4-info--diagnostics))
-              (errors (-sort (-on #'< #'lean4-info--diagnostic-end) errors))
-              ((errors-above errors)
-               (--split-with (< (lean4-info--diagnostic-end it) line) errors))
-              ((errors-here errors-below)
-               (--split-with (<= (lean4-info--diagnostic-start it) line) errors)))
+      (let ((deactivate-mark)           ; keep transient mark
+            (line (save-restriction (widen) (1- (line-number-at-pos nil t))))
+            (goals lean4-info--goals)
+            (term-goal lean4-info--term-goal)
+            (errors-above (sort (lean4-info--diagnostics)
+                                (lambda (a b)
+                                  (< (lean4-info--diagnostic-end a)
+                                     (lean4-info--diagnostic-end b)))))
+            errors-here errors-below)
+        (lean4-info--split errors-above errors-here
+          (lambda (e) (< (lean4-info--diagnostic-end e) line)))
+        (lean4-info--split errors-here errors-below
+          (lambda (e) (<= (lean4-info--diagnostic-start e) line)))
         (with-current-buffer lean4-info-buffer-name
           (erase-buffer)
           (magit-insert-section (magit-section 'root)
-            (when lean4-info--goals
+            (when goals
               (magit-insert-section (magit-section 'goals)
                 (magit-insert-heading "Goals:")
-                (let ((goals lean4-info--goals))
-                  (magit-insert-section-body
-                    (if (> (length goals) 0)
-                        (seq-doseq (g goals)
-                          (magit-insert-section (magit-section)
-                            (insert (lean4-info--fontify-string g) "\n\n")))
-                      (insert "goals accomplished\n\n"))))))
-            (when lean4-info--term-goal
+                (magit-insert-section-body
+                  (if (> (length goals) 0)
+                      (seq-doseq (g goals)
+                        (magit-insert-section (magit-section)
+                          (insert (lean4-info--fontify-string g) "\n\n")))
+                    (insert "goals accomplished\n\n")))))
+            (when term-goal
               (magit-insert-section (magit-section 'term-goal)
                 (magit-insert-heading "Expected type:")
-                (let ((term-goal lean4-info--term-goal))
-                  (magit-insert-section-body
-                    (insert (lean4-info--fontify-string term-goal) "\n\n")))))
+                (magit-insert-section-body
+                  (insert (lean4-info--fontify-string term-goal) "\n\n"))))
             (lean4-mk-message-section 'errors-here "Messages here:" errors-here)
             (lean4-mk-message-section 'errors-below "Messages below:" errors-below)
             (lean4-mk-message-section 'errors-above "Messages above:" errors-above)
@@ -179,7 +195,7 @@ The buffer is supposed to be the *Lean Goal* buffer."
               (save-match-data
                 (while (re-search-forward "\\(\\sw+\\)✝\\([¹²³⁴-⁹⁰]*\\)" nil t)
                   (replace-match
-                   (propertize (s-concat (match-string-no-properties 1)
+                   (propertize (concat (match-string-no-properties 1)
                                          (match-string-no-properties 2))
                                'font-lock-face 'font-lock-comment-face)
                    'fixedcase 'literal))))))))))
@@ -369,20 +385,21 @@ PS is a list of tag IDs."
   "Return the region of the widget at POS.
 POS defaults to the current point."
   (unless pos (setq pos (point)))
-  (when-let ((ps (get-text-property pos 'lean4-p)))
-    (let ((p (car ps))
-          (start (point-min))
-          (end (point-max)))
-      (while (and start
-                  (< start (point-max))
-                  (not (member p (get-text-property start 'lean4-p))))
-        (setq start (next-single-property-change start 'lean4-p nil (point-max))))
-      (while (and end
-                  (> end (point-min))
-                  (not (member p (get-text-property end 'lean4-p))))
-        (setq end (previous-single-property-change end 'lean4-p nil (point-min))))
-      (setq end (next-single-property-change end 'lean4-p nil (point-max)))
-      (cons start end))))
+  (let ((ps (get-text-property pos 'lean4-p)))
+    (when ps
+      (let ((p (car ps))
+            (start (point-min))
+            (end (point-max)))
+        (while (and start
+                    (< start (point-max))
+                    (not (member p (get-text-property start 'lean4-p))))
+          (setq start (next-single-property-change start 'lean4-p nil (point-max))))
+        (while (and end
+                    (> end (point-min))
+                    (not (member p (get-text-property end 'lean4-p))))
+          (setq end (previous-single-property-change end 'lean4-p nil (point-min))))
+        (setq end (next-single-property-change end 'lean4-p nil (point-max)))
+        (cons start end)))))
 
 (defun lean4-info-eldoc-function (cb)
   "Eldoc function for info buffer.

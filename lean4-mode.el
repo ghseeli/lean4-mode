@@ -10,7 +10,7 @@
 ;; Maintainer: Sebastian Ullrich <sebasti@nullri.ch>
 ;; Created: Jan 09, 2014
 ;; Keywords: languages
-;; Package-Requires: ((emacs "29.1") (dash "2.18.0") (s "1.10.0") (f "0.19.0") (flycheck "30") (magit-section "2.90.1") (eglot "1.15") (markdown-mode "2.6"))
+;; Package-Requires: ((emacs "29.1") (flycheck "30") (magit-section "2.90.1") (eglot "1.15") (markdown-mode "2.6"))
 ;; URL: https://github.com/leanprover/lean4-mode
 ;; SPDX-License-Identifier: Apache-2.0
 
@@ -41,7 +41,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'dash)
 (require 'pcase)
 (require 'flycheck)
 (require 'markdown-mode)
@@ -54,7 +53,6 @@
 (require 'lean4-fringe)
 
 ;; Silence byte-compiler
-(defvar lsp--cur-version)
 (defvar markdown-code-lang-modes)
 (defvar compilation-mode-font-lock-keywords)
 (defvar flymake-no-changes-timeout)
@@ -78,7 +76,7 @@ If LAKE-NAME is nonempty, then prepend \"LAKE-NAME env\" to the command
   "Create a temp lean file and return its name.
 The new file has prefix PREFIX (defaults to `flymake') and the same extension as
 FILE-NAME."
-  (make-temp-file (or prefix "flymake") nil (f-ext file-name)))
+  (make-temp-file (or prefix "flymake") nil (file-name-extension file-name)))
 
 (defun lean4-refresh-file-dependencies ()
   "Refresh the file dependencies.
@@ -200,29 +198,30 @@ a language server instance."
            root
            excluded)
       ;; Search for configured roots and exclusions.
-      (if-let ((dir (locate-dominating-file
+      (let ((dir (locate-dominating-file
                      file-name
                      (lambda (file-name)
                        (when (file-directory-p file-name)
                          (or (funcall contains file-name roots)
                              (setq excluded
                                    (funcall contains file-name excls))))))))
-          (unless excluded
-            (setq root dir))
-        ;; Configured directory not found. Now search for a toolchain file.
-        (while-let ((dir (locate-dominating-file file-name "lean-toolchain")))
-          ;; We found a toolchain file, but maybe it belongs to a package.
-          ;; Continue looking until there are no more toolchain files.
-          (setq root dir)
-          (setq file-name (file-name-directory (directory-file-name dir)))))
-      (if root
-          (cons 'lake root)
-        (when (and lean4--workspace-message-enabled (not excluded))
-          (message
-           "File does not belong to a workspace and no lakefile found. \
+        (if dir
+            (unless excluded
+              (setq root dir))
+          ;; Configured directory not found. Now search for a toolchain file.
+          (while-let ((dir (locate-dominating-file file-name "lean-toolchain")))
+            ;; We found a toolchain file, but maybe it belongs to a package.
+            ;; Continue looking until there are no more toolchain files.
+            (setq root dir)
+            (setq file-name (file-name-directory (directory-file-name dir)))))
+        (if root
+            (cons 'lake root)
+          (when (and lean4--workspace-message-enabled (not excluded))
+            (message
+             "File does not belong to a workspace and no lakefile found. \
 Customize the variables `lean4-workspace-roots' and \
 `lean4-workspace-exclusions' to define workspaces.")
-          nil)))))
+            nil))))))
 
 (push #'lean4-project-find project-find-functions)
 
@@ -269,7 +268,7 @@ Invokes `lean4-mode-hook'."
 (defun lean4--version ()
   "Return Lean version as a list `(MAJOR MINOR PATCH)'."
   (with-temp-buffer
-    (call-process (lean4-get-executable "lean") nil (list t nil) nil "-v")
+    (call-process "lean" nil '(t nil) nil "-v")
     (goto-char (point-min))
     (re-search-forward (rx bol "Lean (version " (group (+ digit) (+ "." (+ digit)))))
     (version-to-list (match-string 1))))
@@ -299,22 +298,11 @@ Invokes `lean4-mode-hook'."
 ;;;### autoload
 (modify-coding-system-alist 'file "\\.lean\\'" 'utf-8)
 
-(defun lean4--server-cmd ()
-  "Return Lean server command.
-If found lake version at least 3.1.0, then return '/path/to/lake serve',
-otherwise return '/path/to/lean --server'."
-  (condition-case nil
-      (if (string-version-lessp (car (process-lines (lean4-get-executable "lake") "--version")) "3.1.0")
-          `(,(lean4-get-executable lean4-executable-name) "--server")
-        `(,(lean4-get-executable "lake") "serve"))
-    (error `(,(lean4-get-executable lean4-executable-name) "--server"))))
-
 ;; Eglot init
 (defun lean4--server-class-init (&optional _interactive)
-  (cons 'lean4-eglot-lsp-server (lean4--server-cmd)))
+  (list 'lean4-eglot-lsp-server "lake" "serve"))
 
 (push (cons 'lean4-mode #'lean4--server-class-init) eglot-server-programs)
-
 
 (defclass lean4-eglot-lsp-server (eglot-lsp-server) nil
   :documentation "Eglot LSP server subclass for the Lean 4 server.")
