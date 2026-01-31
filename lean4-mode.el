@@ -52,7 +52,6 @@
 
 ;; Silence byte-compiler
 (defvar markdown-code-lang-modes)
-(defvar compilation-mode-font-lock-keywords)
 (defvar flymake-no-changes-timeout)
 (defvar flymake-start-on-flymake-mode nil)
 (defvar flymake-start-on-save-buffer nil)
@@ -239,7 +238,6 @@ Invokes `lean4-mode-hook'."
   (set (make-local-variable 'comment-use-syntax) t)
   (set (make-local-variable 'font-lock-defaults) lean4-font-lock-defaults)
   (set (make-local-variable 'indent-tabs-mode) nil)
-  (set 'compilation-mode-font-lock-keywords '())
   (require 'lean4-input)
   (set-input-method "Lean")
   (setq-local indent-line-function 'lean4-indent-line)
