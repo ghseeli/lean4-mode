@@ -144,7 +144,13 @@ run only once for each time Emacs becomes idle.")
     (cancel-timer lean4--idle-timer)
     (setq lean4--idle-timer nil)))
 
-(lean4--start-idle-timer)
+(defun lean4--maybe-cancel-idle-timer ()
+  "Cancel `lean4--idle-timer' when no `lean4-mode' buffers remain."
+  (unless (seq-some (lambda (buf)
+                      (with-current-buffer buf
+                        (eq major-mode 'lean4-mode)))
+                    (buffer-list))
+    (lean4--cancel-idle-timer)))
 
 (cl-defmethod project-root ((project (head lake)))
   "A pair ('lake . DIR) is a Lean 4 project whose root directory is DIR.
@@ -222,6 +228,8 @@ Invokes `lean4-mode-hook'."
   :syntax-table lean4-syntax-table
   :abbrev-table lean4-abbrev-table
   :group 'lean
+  (lean4--start-idle-timer)
+  (add-hook 'kill-buffer-hook #'lean4--maybe-cancel-idle-timer nil 'local)
   (set (make-local-variable 'comment-start) "--")
   (set (make-local-variable 'comment-start-skip) "[-/]-[ \t]*")
   (set (make-local-variable 'comment-end) "")
