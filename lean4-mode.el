@@ -298,7 +298,8 @@ Invokes `lean4-mode-hook'."
 (defun lean4--server-class-init (&optional _interactive)
   (list 'lean4-eglot-lsp-server "lake" "serve"))
 
-(push (cons 'lean4-mode #'lean4--server-class-init) eglot-server-programs)
+(setq eglot-server-programs (assq-delete-all 'lean4-mode eglot-server-programs))
+(add-to-list 'eglot-server-programs (cons 'lean4-mode #'lean4--server-class-init))
 
 (defclass lean4-eglot-lsp-server (eglot-lsp-server) nil
   :documentation "Eglot LSP server subclass for the Lean 4 server.")
