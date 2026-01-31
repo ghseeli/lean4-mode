@@ -88,7 +88,7 @@ The buffer is supposed to be the *Lean Goal* buffer."
   (and
    (if lean4-info-refresh-even-if-invisible
        ;; info buffer exists
-       (get-buffer-window buffer)
+       (get-buffer buffer)
      ;; info buffer visible (on any frame)
      (get-buffer-window buffer t))
    (get-buffer buffer)
