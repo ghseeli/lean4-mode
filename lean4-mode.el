@@ -218,7 +218,7 @@ Customize the variables `lean4-workspace-roots' and \
 `lean4-workspace-exclusions' to define workspaces.")
             nil))))))
 
-(push #'lean4-project-find project-find-functions)
+(add-hook 'project-find-functions #'lean4-project-find)
 
 ;;;###autoload
 (define-derived-mode lean4-mode prog-mode "Lean 4"
