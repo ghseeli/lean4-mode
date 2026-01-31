@@ -61,12 +61,6 @@
 (declare-function flymake-goto-next-error "flymake")
 (declare-function quail-show-key "quail")
 
-(defun lean4-create-temp-in-system-tempdir (file-name prefix)
-  "Create a temp lean file and return its name.
-The new file has prefix PREFIX (defaults to `flymake') and the same extension as
-FILE-NAME."
-  (make-temp-file (or prefix "flymake") nil (file-name-extension file-name)))
-
 (defun lean4-refresh-file-dependencies ()
   "Refresh the file dependencies.
 
