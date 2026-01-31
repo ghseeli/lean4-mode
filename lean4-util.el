@@ -96,15 +96,14 @@ timer and kill the execution of this function."
   (declare (indent 2)
            (debug (form form &rest form)))
   (let ((path-var (make-symbol "path")))
-    `(let ((,path-var (abbreviate-file-name
-                       (file-truename
-                        (eglot-uri-to-path ,uri)))))
+    `(let ((,path-var (eglot-uri-to-path ,uri)))
        (dolist (buf (eglot--managed-buffers ,server))
          (when (buffer-live-p buf)
            (with-current-buffer buf
              (when (and buffer-file-name
-                        (string= buffer-file-truename
-                                 ,path-var))
+                        (or (ignore-errors (file-equal-p buffer-file-name ,path-var))
+                            (string= (expand-file-name buffer-file-name)
+                                     (expand-file-name ,path-var))))
                ,@body)))))))
 
 (provide 'lean4-util)
