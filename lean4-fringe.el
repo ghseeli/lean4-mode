@@ -31,8 +31,6 @@
 (require 'lean4-settings)
 (require 'lean4-util)
 
-(defvar-local lean4-fringe-delay-timer nil)
-
 (defface lean4-fringe-face
   nil
   "Face to highlight Lean file progress."
