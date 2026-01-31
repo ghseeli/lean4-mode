@@ -167,9 +167,9 @@ The buffer is supposed to be the *Lean Goal* buffer."
                                      (lean4-info--diagnostic-end b)))))
             errors-here errors-below)
         (lean4-info--split errors-above errors-here
-          (lambda (e) (< (lean4-info--diagnostic-end e) line)))
+                           (lambda (e) (< (lean4-info--diagnostic-end e) line)))
         (lean4-info--split errors-here errors-below
-          (lambda (e) (<= (lean4-info--diagnostic-start e) line)))
+                           (lambda (e) (<= (lean4-info--diagnostic-start e) line)))
         (with-current-buffer lean4-info-buffer-name
           (erase-buffer)
           (magit-insert-section (magit-section 'root)
@@ -196,7 +196,7 @@ The buffer is supposed to be the *Lean Goal* buffer."
                 (while (re-search-forward "\\(\\sw+\\)✝\\([¹²³⁴-⁹⁰]*\\)" nil t)
                   (replace-match
                    (propertize (concat (match-string-no-properties 1)
-                                         (match-string-no-properties 2))
+                                       (match-string-no-properties 2))
                                'font-lock-face 'font-lock-comment-face)
                    'fixedcase 'literal))))))))))
 

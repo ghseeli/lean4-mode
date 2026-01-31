@@ -82,7 +82,7 @@ Counts from the beginning of the line."
 (defun lean4-whitespace-cleanup ()
   "Delete trailing whitespace if `lean4-delete-trailing-whitespace' is t."
   (when lean4-delete-trailing-whitespace
-      (delete-trailing-whitespace)))
+    (delete-trailing-whitespace)))
 
 (defun lean4-in-comment-p ()
   "Return t if a current point is inside of comment block.  Return nil otherwise."

@@ -92,7 +92,7 @@ excluded) above the current line. If there is no such line,
 then the empty list is returned."
   (let ((start (line-beginning-position)))
     (save-excursion
-      ; Find a non-empty line above the current one, if any.
+      ;; Find a non-empty line above the current one, if any.
       (while
           (progn
             (forward-line -1)
@@ -117,8 +117,8 @@ the returned list."
       (while
           (progn
             (forward-line -1)
-            ; Skip the line we started from and lines with nothing but
-            ; white space.
+            ;; Skip the line we started from and lines with nothing but
+            ;; white space.
             (unless (or (equal (point) start)
                         (lean4-eri-current-line-empty))
               (setq points

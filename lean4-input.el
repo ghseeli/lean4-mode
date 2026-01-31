@@ -58,8 +58,8 @@
 First remove all space and newline characters."
   (lean4-input-concat-map
    (lambda (c) (if (member c (string-to-list " \n"))
-              nil
-            (list (string c))))
+                   nil
+                 (list (string c))))
    (string-to-list s)))
 
 (defun lean4-input-character-range (from to)
@@ -86,7 +86,7 @@ First remove all space and newline characters."
 
 (defun lean4-input-prepend (prefix)
   "Prepend PREFIX to all key sequences."
-    (lambda (x) `((,(concat prefix (car x)) . ,(cdr x)))))
+  (lambda (x) `((,(concat prefix (car x)) . ,(cdr x)))))
 
 (defun lean4-input-prefix (prefix)
   "Only keep pairs whose key sequence starts with PREFIX."
@@ -263,7 +263,8 @@ Use customisable variables and parent input methods to setup Lean input method."
 
   ;; Create (or reset) the input method.
   (with-temp-buffer
-    (quail-define-package "Lean" "UTF-8" "∏" t ; guidance
+    (quail-define-package
+     "Lean" "UTF-8" "∏" t ; guidance
      "Lean input method.
 The purpose of this input method is to edit Lean programs, but
 since it is highly customisable it can be made useful for other
@@ -290,7 +291,7 @@ tasks as well."
       lean4-input-add-translations))
   (dolist (def lean4-input-inherit)
     (lean4-input-inherit-package (car def)
-                                (eval (cdr def)))))
+                                 (eval (cdr def)))))
 
 (defun lean4-input-incorporate-changed-setting (sym val)
   "Update the Lean input method.

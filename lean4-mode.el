@@ -199,12 +199,12 @@ a language server instance."
            excluded)
       ;; Search for configured roots and exclusions.
       (let ((dir (locate-dominating-file
-                     file-name
-                     (lambda (file-name)
-                       (when (file-directory-p file-name)
-                         (or (funcall contains file-name roots)
-                             (setq excluded
-                                   (funcall contains file-name excls))))))))
+                  file-name
+                  (lambda (file-name)
+                    (when (file-directory-p file-name)
+                      (or (funcall contains file-name roots)
+                          (setq excluded
+                                (funcall contains file-name excls))))))))
         (if dir
             (unless excluded
               (setq root dir))
@@ -376,7 +376,7 @@ which item is which."
               (when (string= title "Apply 'Try this'")
                 (setf (cl-getf action :title)
                       (concat title ": " newText)))))))))
-    args)
+  args)
 
 (advice-add 'eglot--read-execute-code-action :filter-args
             #'lean4-mode--before--eglot-read-execute-code-action)
