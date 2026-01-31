@@ -291,7 +291,7 @@ Invokes `lean4-mode-hook'."
   (add-to-list 'markdown-code-lang-modes '("lean" . lean4-select-mode)))
 
 ;; Use utf-8 encoding
-;;;### autoload
+;;;###autoload
 (modify-coding-system-alist 'file "\\.lean\\'" 'utf-8)
 
 ;; Eglot init
