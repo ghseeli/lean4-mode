@@ -320,11 +320,6 @@ PS is a list of tag IDs."
             (when (and (not (eq goals :none))
                        (not (eq term-goal :none))
                        (buffer-live-p buf))
-              ;; print goals and term-goal to *DebugInfo* buffer:
-              (with-current-buffer (get-buffer-create "*DebugInfo*")
-                (erase-buffer)
-                (insert (format "goals: %s\n" goals))
-                (insert (format "term-goal: %s\n" term-goal)))
               (with-current-buffer buf
                 (setq lean4-info--goals goals)
                 (setq lean4-info--term-goal term-goal)
@@ -422,9 +417,6 @@ CB is the callback function provided by Eldoc."
                    :params (:p ,p))
          :success-fn
          (lambda (result)
-           (with-current-buffer (get-buffer-create "*DebugInfoResults*")
-             (erase-buffer)
-             (insert (format "result: %s" result)))
            (let* ((doc (plist-get result :doc))
                   (type (lean4-info-parse-type (plist-get result :type)
                                                nil))
