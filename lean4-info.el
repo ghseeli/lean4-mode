@@ -39,7 +39,7 @@
 
 (defgroup lean4-info nil
   "Lean Info."
-  :group 'lean)
+  :group 'lean4)
 
 ;; Lean Info Mode (for "*lean4-info*" buffer)
 ;; Automode List
@@ -80,8 +80,7 @@ The buffer is supposed to be the *Lean Goal* buffer."
 
 (defcustom lean4-info-refresh-even-if-invisible nil
   "If non-nil, refresh the info buffer even if it is not visible."
-  :type 'boolean
-  :group 'lean4-info)
+  :type 'boolean)
 
 (defun lean4-info-buffer-active (buffer)
   "Check whether the given info BUFFER should show info for the current buffer."
@@ -207,8 +206,7 @@ an experimental feature that requires further testing."
   :type
   '(choice
     (const :tag "Plain text" t)
-    (const :tag "Hover docs" nil))
-  :group 'lean4)
+    (const :tag "Hover docs" nil)))
 
 (defvar lean4--rpc-server nil)
 (defvar lean4--rpc-textDocument nil)

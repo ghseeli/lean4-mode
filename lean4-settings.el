@@ -41,19 +41,16 @@
 Set this variable to true to automatically delete trailing
 whitespace when a buffer is loaded from a file or when it is
 written."
-  :group 'lean
   :type 'boolean)
 
 (defcustom lean4-highlight-inaccessible-names t
   "Use font to highlight inaccessible names.
 Set this variable to t to highlight inaccessible names in the info display
 using `font-lock-comment-face' instead of the `✝` suffix used by Lean."
-  :group 'lean
   :type 'boolean)
 
 (defcustom lean4-show-file-progress t
   "Highlight file progress in the current buffer."
-  :group 'lean
   :type 'boolean)
 
 
@@ -62,19 +59,16 @@ using `font-lock-comment-face' instead of the `✝` suffix used by Lean."
 Use elan to check if current project uses Lean 3 or Lean 4 and initialize the
 right mode when visiting a file.  If elan has a default Lean version, Lean files
 outside a project will default to that mode."
-  :group 'lean
   :type 'boolean)
 
 (defcustom lean4-idle-delay 0.3
   "Interval for `lean4-idle-hook` functions."
-  :type 'number
-  :group 'lean4-mode)
+  :type 'number)
 
 (defcustom lean4-enable-file-watchers nil
   "Honour requests from the server to watch for file modifications.
 This is disabled by default because the server wants to watch \"**/*.ilean\",
 and in many cases there are too many directories to watch each individually."
-  :group 'lean4
   :type 'boolean)
 
 (provide 'lean4-settings)

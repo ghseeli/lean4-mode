@@ -145,7 +145,7 @@ This suffix is dropped."
   "The Lean input method.
 After tweaking these settings you may want to inspect the resulting
 translations using `lean4-input-show-translations'."
-  :group 'lean
+  :group 'lean4
   :group 'leim)
 
 (defcustom lean4-input-inherit
@@ -173,7 +173,6 @@ The inherited translation pairs are added last, after
 If you change this setting manually (without using the
 customization buffer) you need to call `lean4-input-setup' in
 order for the change to take effect."
-  :group 'lean4-input
   :set 'lean4-input-incorporate-changed-setting
   :initialize 'custom-initialize-default
   :type '(repeat (cons (string :tag "Quail package")
@@ -182,7 +181,6 @@ order for the change to take effect."
 (defcustom lean4-input-data-directory
   (expand-file-name "data/" (file-name-directory (or load-file-name (buffer-file-name))))
   "Directory in which translations.json resides."
-  :group 'lean4-input
   :type 'directory)
 
 (defcustom lean4-input-user-translations nil
@@ -194,7 +192,6 @@ between them using the arrow keys.
 
 These translation pairs are included first, before thoseinherited
 from other input methods."
-  :group 'lean4-input
   :set 'lean4-input-incorporate-changed-setting
   :initialize 'custom-initialize-default
   :type '(repeat (cons (string :tag "Key sequence")

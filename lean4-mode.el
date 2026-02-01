@@ -221,7 +221,7 @@ Customize the variables `lean4-workspace-roots' and \
 Invokes `lean4-mode-hook'."
   :syntax-table lean4-syntax-table
   :abbrev-table lean4-abbrev-table
-  :group 'lean
+  :group 'lean4
   (lean4--start-idle-timer)
   (add-hook 'kill-buffer-hook #'lean4--maybe-cancel-idle-timer nil 'local)
   (set (make-local-variable 'comment-start) "--")
