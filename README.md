@@ -8,7 +8,7 @@ To use `lean4-mode` in Emacs, add the following to your `init.el`:
 ;; You need to modify the following line
 (setq load-path (cons "/path/to/lean4-mode" load-path))
 
-(setq lean4-mode-required-packages '(dash f flycheck lsp-mode magit-section s))
+(setq lean4-mode-required-packages '(magit-section markdown-mode s))
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
@@ -73,10 +73,6 @@ Key Bindings and Commands
 | <kbd>C-c C-x</kbd> | execute Lean in stand-alone mode (`lean4-std-exe`)                              |
 | <kbd>C-c C-p C-l</kbd> | builds package with lake (`lean4-lake-build`)                                   |
 | <kbd>C-c C-i</kbd> | toggle info view showing goals and errors at point (`lean4-toggle-info-buffer`) |
-| <kbd>C-c ! n</kbd> | flycheck: go to next error                                                      |
-| <kbd>C-c ! p</kbd> | flycheck: go to previous error                                                  |
 
-For `lsp-mode` bindings, see https://emacs-lsp.github.io/lsp-mode/page/keybindings/ (not all capabilities are supported currently).
-
-In the default configuration, the Flycheck annotation `FlyC:n/n` indicates the
-number of errors / responses from Lean; clicking on `FlyC` opens the Flycheck menu.
+Diagnostics are provided via Flymake (through Eglot). Use `next-error` / `previous-error`
+(e.g. <kbd>M-g n</kbd> / <kbd>M-g p</kbd>) to navigate them.
