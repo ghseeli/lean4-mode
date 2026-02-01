@@ -1,78 +1,105 @@
+This repository is an unofficial fork of `lean4-mode`.
+
 Installation
 ============
 
 Before using this major mode, you need to [install Lean 4](https://leanprover.github.io/lean4/doc/setup.html#basic-setup).
 
-To use `lean4-mode` in Emacs, add the following to your `init.el`:
+To use `lean4-mode` in Emacs, clone the repository and add the following to your `init.el`:
 ```
 ;; You need to modify the following line
-(setq load-path (cons "/path/to/lean4-mode" load-path))
+(add-to-list 'load-path "/path/to/lean4-mode")
 
-(setq lean4-mode-required-packages '(magit-section markdown-mode s))
-
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-(package-initialize)
-(let ((need-to-refresh t))
-  (dolist (p lean4-mode-required-packages)
-    (when (not (package-installed-p p))
-      (when need-to-refresh
-        (package-refresh-contents)
-        (setq need-to-refresh nil))
-      (package-install p))))
+;; Install the Emacs dependencies via your preferred package manager:
+;;   eglot, magit-section, markdown-mode
 
 (require 'lean4-mode)
 ```
 Alternatively if you are a fan of `use-package` and `straight.el` you
-can use:
+can use the following:
 ```
 (use-package lean4-mode
   :straight (lean4-mode
-	     :type git
-	     :host github
-	     :repo "leanprover/lean4-mode"
-	     :files ("*.el" "data"))
-  ;; to defer loading the package until required
-  :commands (lean4-mode))
+	            :type git
+             :host github
+	            :repo "<forkname>/lean4-mode" ;; replace with name of fork
+	            :files ("*.el" "data")))
+```
+If you are an Elpaca user, a similar recipe works:
+```
+(use-package lean4-mode
+  :elpaca (lean4-mode
+           ;; Replace this with your fork.
+           :host github
+           :repo "<forkname>/lean4-mode"
+           :files ("*.el" "data")))
 ```
 If you are a doom-emacs user, adding the following to `packages.el` should work:
 ```
 (package! lean4-mode :recipe
   (:host github
-   :repo "leanprover/lean4-mode"
+   :repo "<forkname>/lean4-mode"
    :files ("*.el" "data")))
 ```
+
+After installation, visiting a `.lean` file should automatically load and enable `lean4-mode`.
 
 Trying It Out
 =============
 
 If things are working correctly, you should see the word ``Lean 4`` in the
-Emacs mode line when you open a file with extension `.lean`. Emacs will ask you
-to identify the "project" this file belongs to. If you then type
+Emacs mode line when you open a file with extension `.lean`.  If you then type
 ```lean
 #check id
 ```
-the word ``#check`` will be underlined, and hovering over it will show
-you the type of ``id``. The mode line will show ``FlyC:0/1``, indicating
-that there are no errors and one piece of information displayed.
+the word ``#check`` should be underlined once the language server is running.
 
 Settings
 ========
 
-Set these with e.g. `M-x customize-variable`.
+Set these with e.g. `M-x customize-variable` / `M-x customize-group RET lean4 RET`.
 
-* `lsp-headerline-breadcrumb-enable`: show a "breadcrumb bar" of namespaces and sections surrounding the current location (default: off)
+Some useful variables:
+
+* `lean4-indent-offset`: indentation step (default: 2)
+* `lean4-idle-delay`: refresh delay for goals/messages at point (default: 0.3)
+* `lean4-info-plain`: plain goals (t) vs widget-based hover docs (nil; experimental)
+* `lean4-show-file-progress`: highlight server processing progress (default: t)
 
 Key Bindings and Commands
 =========================
 
-| Key                | Function                                                                        |
-|--------------------|---------------------------------------------------------------------------------|
-| <kbd>C-c C-k</kbd> | show the keystroke needed to input the symbol under the cursor                  |
-| <kbd>C-c C-d</kbd> | recompile & reload imports (`lean4-refresh-file-dependencies`)                  |
-| <kbd>C-c C-x</kbd> | execute Lean in stand-alone mode (`lean4-std-exe`)                              |
-| <kbd>C-c C-p C-l</kbd> | builds package with lake (`lean4-lake-build`)                                   |
-| <kbd>C-c C-i</kbd> | toggle info view showing goals and errors at point (`lean4-toggle-info-buffer`) |
+`lean4-mode` does not bind keys by default.  We suggest adding something like the following to your config:
+```elisp
+(with-eval-after-load 'lean4-mode
+  (keymap-set lean4-mode-map "C-c C-k" #'quail-show-key)
+  (keymap-set lean4-mode-map "C-c C-i" #'lean4-toggle-info)
+  (keymap-set lean4-mode-map "C-c C-d" #'lean4-refresh-file-dependencies))
+```
+This yields the setup:
+| Key                | Function                             |
+|--------------------|--------------------------------------|
+| <kbd>C-c C-k</kbd> | show keystroke for symbol            |
+| <kbd>C-c C-d</kbd> | restart Lean server for current file |
+| <kbd>C-c C-i</kbd> | toggle goal/messages buffer          |
 
 Diagnostics are provided via Flymake (through Eglot). Use `next-error` / `previous-error`
 (e.g. <kbd>M-g n</kbd> / <kbd>M-g p</kbd>) to navigate them.
+
+Compiling
+=========
+Emacs has built-in support for running compilation commands.
+You can build your project using `M-x project-compile` (`C-x p c`) and, e.g., `lake build`.
+To set a default compilation command in `lean4-mode` buffers, use, e.g.,
+```elisp
+(add-hook 'lean4-mode-hook
+          (lambda ()
+            (setq-local compile-command "lake build ")))
+```
+To set compilation commands on a per-project basis, use a directory local variable, e.g., by putting
+```elisp
+((nil . ((compile-command . "lake build "))))
+```
+in `/path/to/project/root/.dir-locals.el`.
+
+You can build individual files using `M-x compile` and, e.g., `lake env lean Foo.lean`.
