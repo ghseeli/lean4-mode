@@ -36,45 +36,6 @@
   :link '(url-link :tag "Website" "http://leanprover.github.io")
   :link '(url-link :tag "Github"  "https://github.com/leanprover/lean4"))
 
-(defgroup lean4-keybinding nil
-  "Keybindings for lean4-mode."
-  :prefix "lean4-"
-  :group 'lean)
-
-(defconst lean4-default-executable-name
-  (cl-case system-type
-    (windows-nt "lean.exe")
-    (t          "lean"))
-  "Default executable name of Lean.")
-
-(defconst lean4-default-lake-name
-  (cl-case system-type
-    (windows-nt "lake.exe")
-    (t          "lake"))
-  "Default executable name of Lake.")
-
-(defcustom lean4-executable-name lean4-default-executable-name
-  "Name of lean executable."
-  :group 'lean
-  :type 'string)
-
-(defcustom lean4-memory-limit 1024
-  "Memory limit for lean process in megabytes."
-  :group 'lean
-  :type 'number)
-
-(defcustom lean4-timeout-limit 100000
-  "Deterministic timeout limit.
-
-It is approximately the maximum number of memory allocations in thousands."
-  :group 'lean
-  :type 'number)
-
-(defcustom lean4-extra-arguments nil
-  "Extra command-line arguments to the lean process."
-  :group 'lean
-  :type '(list string))
-
 (defcustom lean4-delete-trailing-whitespace nil
   "Automatically delete trailing shitespace.
 Set this variable to true to automatically delete trailing
