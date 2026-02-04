@@ -91,9 +91,10 @@
       (setq lean4-fringe-delay-timer
             (run-at-time 0.3 nil
                          (lambda (buf)
-                           (with-current-buffer buf
-                             (lean4-fringe-update-progress-overlays)
-                             (setq lean4-fringe-delay-timer nil)))
+                           (when (buffer-live-p buf)
+                             (with-current-buffer buf
+                               (lean4-fringe-update-progress-overlays)
+                               (setq lean4-fringe-delay-timer nil))))
                          (current-buffer))))))
 
 (provide 'lean4-fringe)
