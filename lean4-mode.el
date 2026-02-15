@@ -10,7 +10,7 @@
 ;; Maintainer: Sebastian Ullrich <sebasti@nullri.ch>
 ;; Created: Jan 09, 2014
 ;; Keywords: languages
-;; Package-Requires: ((emacs "29.1") (magit-section "2.90.1") (eglot "1.15") (markdown-mode "2.6"))
+;; Package-Requires: ((emacs "29.1") (magit-section "2.90.1"))
 ;; URL: https://github.com/leanprover/lean4-mode
 ;; SPDX-License-Identifier: Apache-2.0
 
@@ -41,7 +41,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'markdown-mode)
 (require 'eglot)
 (require 'lean4-eri)
 (require 'lean4-util)
