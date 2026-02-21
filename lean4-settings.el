@@ -53,6 +53,13 @@ using `font-lock-comment-face' instead of the `✝` suffix used by Lean."
   "Highlight file progress in the current buffer."
   :type 'boolean)
 
+(defcustom lean4-show-goals-accomplished t
+  "Show a checkmark in the fringe for sorry-free declarations.
+When the Lean server reports that goals have been accomplished
+for a declaration (i.e., it is sorry-free), display a double
+blue checkmark in the left fringe."
+  :type 'boolean)
+
 
 (defcustom lean4-autodetect-lean3 nil
   "Autodetect Lean version.

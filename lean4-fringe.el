@@ -40,6 +40,14 @@
     (define-fringe-bitmap 'lean4-fringe-fringe-bitmap
       (vector) 16 8))
 
+(if (fboundp 'define-fringe-bitmap)
+    (define-fringe-bitmap 'lean4-fringe-goals-accomplished-bitmap
+      (vector #x00 #x00 #x00 #x01
+              #x02 #x04 #x28 #x10
+              #xA0 #x40 #x00 #x00
+              #x00 #x00 #x00 #x00)
+      16 8))
+
 (defface lean4-fringe-fringe-processing-face
   '((((class color) (background light))
      :background "chocolate1")
@@ -56,6 +64,15 @@
      :background "red")
     (t :inverse-video t))
   "Face to highlight the fringe of Lean file fatal errors."
+  :group 'lean)
+
+(defface lean4-fringe-fringe-goals-accomplished-face
+  '((((class color) (background light))
+     :foreground "#3063b5")
+    (((class color) (background dark))
+     :foreground "#3794ff")
+    (t :foreground "blue"))
+  "Face to highlight the fringe checkmark for sorry-free declarations."
   :group 'lean)
 
 (defun lean4-fringe-fringe-face (lean-file-progress-processing-info)
@@ -96,6 +113,40 @@
                                (lean4-fringe-update-progress-overlays)
                                (setq lean4-fringe-delay-timer nil))))
                          (current-buffer))))))
+
+(defvar-local lean4-fringe-goals-accomplished-data nil)
+
+(defun lean4-fringe-update-goals-accomplished-overlays ()
+  "Update goals accomplished checkmarks in the current buffer."
+  (dolist (ov (flatten-tree (overlay-lists)))
+    (when (eq (overlay-get ov 'lean4-type) 'goals-accomplished)
+      (delete-overlay ov)))
+  (when lean4-show-goals-accomplished
+    (seq-doseq (diag lean4-fringe-goals-accomplished-data)
+      (let* ((range (cl-getf diag :range))
+             (start (cl-getf range :start))
+             (line (cl-getf start :line)))
+        (save-excursion
+          (save-restriction
+            (widen)
+            (goto-char (point-min))
+            (forward-line line)
+            (let ((ov (make-overlay (point) (min (1+ (point)) (point-max)))))
+              (overlay-put ov 'lean4-type 'goals-accomplished)
+              (overlay-put ov 'before-string
+                           (propertize " " 'display
+                                       '(left-fringe lean4-fringe-goals-accomplished-bitmap
+                                                     lean4-fringe-fringe-goals-accomplished-face)))
+              (overlay-put ov 'help-echo "goals accomplished ✓"))))))))
+
+(defun lean4-fringe-store-goals-accomplished (diagnostics)
+  "Store goals-accomplished diagnostics from DIAGNOSTICS."
+  (setq lean4-fringe-goals-accomplished-data
+        (seq-filter
+         (lambda (diag)
+           (let ((tags (cl-getf diag :leanTags)))
+             (and tags (seq-contains-p tags 2))))
+         diagnostics)))
 
 (provide 'lean4-fringe)
 ;;; lean4-fringe.el ends here
