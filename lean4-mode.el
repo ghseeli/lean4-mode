@@ -60,6 +60,7 @@
 (declare-function flymake-goto-next-error "flymake")
 (declare-function quail-show-key "quail")
 (declare-function tabulated-list-get-id "tabulated-list")
+(declare-function flymake--diagnostics-buffer-name "flymake")
 
 (defun lean4-refresh-file-dependencies ()
   "Refresh the file dependencies.
@@ -341,11 +342,6 @@ under the key `lean4-full-message' for use by eldoc functions."
 ;;   - Pressing RET on a diagnostic line opens the `*eldoc*' buffer with
 ;;     the full message, which is convenient for very long messages.
 
-;; Forward-declare this flymake internal variable to suppress byte-compiler
-;; warnings.  It is buffer-local in flymake diagnostics buffers and holds
-;; the source buffer that the diagnostics were collected from.
-(defvar flymake--diagnostics-buffer-source)
-
 (defun lean4--flymake-diagnostics-eldoc (callback)
   "Eldoc documentation function for the flymake diagnostics buffer.
 Passes the full (untruncated) Lean 4 diagnostic message for the entry
@@ -358,31 +354,31 @@ at point to CALLBACK."
         (funcall callback msg)
         t))))
 
-(defun lean4--flymake-diagnostics-buffer-setup ()
-  "Set up eldoc in the flymake diagnostics buffer for Lean 4 source files.
-Only activates when the diagnostics buffer is associated with a source buffer
-in `lean4-mode'.  Enables `eldoc-mode', registers
+(defun lean4--flymake-show-buffer-diagnostics-setup (&rest _)
+  "Set up Lean 4 eldoc support in the flymake diagnostics buffer.
+Called as `:after' advice on `flymake-show-buffer-diagnostics'.
+At that point the current buffer is still the lean4-mode source buffer, so
+`derived-mode-p' works correctly.  Enables `eldoc-mode', registers
 `lean4--flymake-diagnostics-eldoc' as an eldoc documentation function, and
-binds RET to `eldoc-doc-buffer' so that pressing Enter opens a dedicated
-buffer with the complete diagnostic message.  This also enables hover popups
-when `eldoc-box-hover-mode' is active."
-  (when (and (boundp 'flymake--diagnostics-buffer-source)
-             (buffer-live-p flymake--diagnostics-buffer-source)
-             (with-current-buffer flymake--diagnostics-buffer-source
-               (derived-mode-p 'lean4-mode)))
-    (add-hook 'eldoc-documentation-functions
-              #'lean4--flymake-diagnostics-eldoc nil t)
-    (eldoc-mode 1)
-    ;; Copy the mode keymap so that our RET binding is buffer-local and does
-    ;; not modify the shared `flymake-diagnostics-buffer-mode-map'.
-    (use-local-map (copy-keymap (current-local-map)))
-    (define-key (current-local-map) (kbd "RET") #'eldoc-doc-buffer)))
+binds RET to `eldoc-doc-buffer' (opening a dedicated buffer with the full
+diagnostic message).  This also enables hover popups when
+`eldoc-box-hover-mode' is active."
+  (when (derived-mode-p 'lean4-mode)
+    (when-let ((diag-buf (get-buffer (flymake--diagnostics-buffer-name))))
+      (with-current-buffer diag-buf
+        (unless (memq #'lean4--flymake-diagnostics-eldoc
+                      eldoc-documentation-functions)
+          (add-hook 'eldoc-documentation-functions
+                    #'lean4--flymake-diagnostics-eldoc nil t)
+          (eldoc-mode 1)
+          ;; Copy the mode keymap buffer-locally so RET is only overridden
+          ;; in this buffer and `flymake-diagnostics-buffer-mode-map' is
+          ;; left unmodified.
+          (use-local-map (copy-keymap (current-local-map)))
+          (define-key (current-local-map) (kbd "RET") #'eldoc-doc-buffer))))))
 
-;; The hook is added globally so that the setup function is called for any
-;; flymake diagnostics buffer.  The setup function itself checks whether the
-;; associated source buffer is in `lean4-mode' and only activates there.
-(add-hook 'flymake-diagnostics-buffer-mode-hook
-          #'lean4--flymake-diagnostics-buffer-setup)
+(advice-add 'flymake-show-buffer-diagnostics :after
+            #'lean4--flymake-show-buffer-diagnostics-setup)
 
 ;; Eglot init
 (defun lean4--server-class-init (&optional _interactive)
