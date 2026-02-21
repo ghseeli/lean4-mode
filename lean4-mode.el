@@ -288,20 +288,19 @@ Invokes `lean4-mode-hook'."
 (modify-coding-system-alist 'file "\\.lean\\'" 'utf-8)
 
 ;; Compatibility fix: Eglot 1.17+ stores flymake diagnostic text as a
-;; list (SOURCE CODE MESSAGE), but Emacs 29's flymake expects a string.
+;; list (SOURCE CODE MESSAGE), but flymake expects a string.
 ;; Without this, `flymake-show-buffer-diagnostics' and the
 ;; eglot-flymake-backend fail with `wrong-type-argument stringp'.
-(when (< emacs-major-version 30)
-  (defun lean4--flymake-diag-compat (args)
-    "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
-    (let ((text (nth 4 args)))
-      (when (and text (consp text))
-        ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
-        (setcar (nthcdr 4 args)
-                (or (nth 2 text) ""))))
-    args)
-  (advice-add 'flymake-make-diagnostic :filter-args
-              #'lean4--flymake-diag-compat))
+(defun lean4--flymake-diag-compat (args)
+  "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
+  (let ((text (nth 4 args)))
+    (when (and text (consp text))
+      ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
+      (setcar (nthcdr 4 args)
+              (or (nth 2 text) ""))))
+  args)
+(advice-add 'flymake-make-diagnostic :filter-args
+            #'lean4--flymake-diag-compat)
 
 ;; Eglot init
 (defun lean4--server-class-init (&optional _interactive)
