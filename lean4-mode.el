@@ -59,6 +59,8 @@
 (declare-function flymake-proc-init-create-temp-buffer-copy "flymake-proc")
 (declare-function flymake-goto-next-error "flymake")
 (declare-function quail-show-key "quail")
+(declare-function tabulated-list-get-id "tabulated-list")
+(declare-function flymake--diagnostics-buffer-name "flymake")
 
 (defun lean4-refresh-file-dependencies ()
   "Refresh the file dependencies.
@@ -291,16 +293,92 @@ Invokes `lean4-mode-hook'."
 ;; list (SOURCE CODE MESSAGE), but flymake expects a string.
 ;; Without this, `flymake-show-buffer-diagnostics' and the
 ;; eglot-flymake-backend fail with `wrong-type-argument stringp'.
+;; Additionally, Lean 4 diagnostic messages are often multi-line, but
+;; `flymake-show-buffer-diagnostics' uses `tabulated-list-mode' which
+;; only displays the first line of multi-line strings.  Replace
+;; newlines with spaces so the full message is visible on one line.
+;; The full original message is preserved in the DATA alist so that
+;; eldoc can display it untruncated (see `lean4--flymake-diagnostics-eldoc').
 (defun lean4--flymake-diag-compat (args)
-  "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
-  (let ((text (nth 4 args)))
-    (when (and text (consp text))
-      ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
-      (setcar (nthcdr 4 args)
-              (or (nth 2 text) ""))))
+  "Ensure TEXT argument to `flymake-make-diagnostic' is a single-line string.
+If TEXT is a list (SOURCE CODE MESSAGE) as used by Eglot 1.17+, extract
+the MESSAGE element.  Replace newlines with spaces so the complete message
+is visible in `flymake-show-buffer-diagnostics', which uses
+`tabulated-list-mode' and only shows the first line of multi-line text.
+The original multi-line message is stored in the diagnostic DATA alist
+under the key `lean4-full-message' for use by eldoc functions."
+  (let* ((text (nth 4 args))
+         (full-message
+          (cond
+           ((consp text) (or (nth 2 text) ""))
+           ((stringp text) text)
+           (t ""))))
+    ;; Flatten newlines for display in the tabulated-list diagnostics buffer.
+    (setcar (nthcdr 4 args)
+            (replace-regexp-in-string "\n" " " full-message))
+    ;; Store the original multi-line message in the DATA alist so that
+    ;; eldoc functions in the diagnostics buffer can display the full text.
+    ;; ARGS has the form (LOCUS BEG END TYPE TEXT &optional DATA OVERLAY-PROPERTIES).
+    ;; `(nthcdr 5 args)' is nil when DATA was not supplied (fewer than 6 elements).
+    ;; Eglot always supplies DATA as an alist; the `listp' guard is defensive for
+    ;; other backends that might supply a non-alist atom for DATA.  Note that `nil'
+    ;; is a valid list in Emacs Lisp, so a nil DATA is treated as an empty list.
+    (let ((data-cell (nthcdr 5 args)))
+      (when data-cell                   ; DATA was supplied (args has ≥ 6 elements)
+        (setcar data-cell
+                (cons (cons 'lean4-full-message full-message)
+                      (let ((d (car data-cell)))
+                        (if (listp d) d '())))))))
   args)
 (advice-add 'flymake-make-diagnostic :filter-args
             #'lean4--flymake-diag-compat)
+
+;; Eldoc support for the flymake diagnostics buffer.
+;; When `flymake-show-buffer-diagnostics' is used, the displayed messages
+;; are truncated to a single line.  The following code makes the full
+;; multi-line message available via eldoc:
+;;   - Moving point over a diagnostic line shows the full message in
+;;     the echo area (or in an eldoc-box popup if `eldoc-box' is enabled).
+;;   - Pressing RET on a diagnostic line opens the `*eldoc*' buffer with
+;;     the full message, which is convenient for very long messages.
+
+(defun lean4--flymake-diagnostics-eldoc (callback)
+  "Eldoc documentation function for the flymake diagnostics buffer.
+Passes the full (untruncated) Lean 4 diagnostic message for the entry
+at point to CALLBACK."
+  (let ((diag (tabulated-list-get-id)))
+    (when diag
+      (let* ((data (flymake-diagnostic-data diag))
+             (full-msg (cdr (assoc 'lean4-full-message data)))
+             (msg (or full-msg (flymake-diagnostic-text diag))))
+        (funcall callback msg)
+        t))))
+
+(defun lean4--flymake-show-buffer-diagnostics-setup (&rest _)
+  "Set up Lean 4 eldoc support in the flymake diagnostics buffer.
+Called as `:after' advice on `flymake-show-buffer-diagnostics'.
+At that point the current buffer is still the lean4-mode source buffer, so
+`derived-mode-p' works correctly.  Enables `eldoc-mode', registers
+`lean4--flymake-diagnostics-eldoc' as an eldoc documentation function, and
+binds RET to `eldoc-doc-buffer' (opening a dedicated buffer with the full
+diagnostic message).  This also enables hover popups when
+`eldoc-box-hover-mode' is active."
+  (when (derived-mode-p 'lean4-mode)
+    (when-let ((diag-buf (get-buffer (flymake--diagnostics-buffer-name))))
+      (with-current-buffer diag-buf
+        (unless (memq #'lean4--flymake-diagnostics-eldoc
+                      eldoc-documentation-functions)
+          (add-hook 'eldoc-documentation-functions
+                    #'lean4--flymake-diagnostics-eldoc nil t)
+          (eldoc-mode 1)
+          ;; Copy the mode keymap buffer-locally so RET is only overridden
+          ;; in this buffer and `flymake-diagnostics-buffer-mode-map' is
+          ;; left unmodified.
+          (use-local-map (copy-keymap (current-local-map)))
+          (define-key (current-local-map) (kbd "RET") #'eldoc-doc-buffer))))))
+
+(advice-add 'flymake-show-buffer-diagnostics :after
+            #'lean4--flymake-show-buffer-diagnostics-setup)
 
 ;; Eglot init
 (defun lean4--server-class-init (&optional _interactive)
