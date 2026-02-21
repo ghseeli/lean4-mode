@@ -295,7 +295,8 @@ Invokes `lean4-mode-hook'."
   (defun lean4--flymake-diag-compat (args)
     "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
     (let ((text (nth 4 args)))
-      (when (and text (consp text) (not (stringp text)))
+      (when (and text (consp text))
+        ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
         (setcar (nthcdr 4 args)
                 (or (nth 2 text) ""))))
     args)
