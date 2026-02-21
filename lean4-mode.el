@@ -291,13 +291,26 @@ Invokes `lean4-mode-hook'."
 ;; list (SOURCE CODE MESSAGE), but flymake expects a string.
 ;; Without this, `flymake-show-buffer-diagnostics' and the
 ;; eglot-flymake-backend fail with `wrong-type-argument stringp'.
+;; Additionally, Lean 4 diagnostic messages are often multi-line, but
+;; `flymake-show-buffer-diagnostics' uses `tabulated-list-mode' which
+;; only displays the first line of multi-line strings.  Replace
+;; newlines with spaces so the full message is visible on one line.
 (defun lean4--flymake-diag-compat (args)
-  "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
+  "Ensure TEXT argument to `flymake-make-diagnostic' is a single-line string.
+If TEXT is a list (SOURCE CODE MESSAGE) as used by Eglot 1.17+, extract
+the MESSAGE element.  Replace newlines with spaces so the complete message
+is visible in `flymake-show-buffer-diagnostics', which uses
+`tabulated-list-mode' and only shows the first line of multi-line text."
   (let ((text (nth 4 args)))
-    (when (and text (consp text))
-      ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
+    (cond
+     ((consp text)
+      ;; Eglot 1.17+: extract MESSAGE from (SOURCE CODE MESSAGE) list.
       (setcar (nthcdr 4 args)
-              (or (nth 2 text) ""))))
+              (replace-regexp-in-string "\n" " " (or (nth 2 text) ""))))
+     ((stringp text)
+      ;; Older Eglot: text is already a string; still flatten newlines.
+      (setcar (nthcdr 4 args)
+              (replace-regexp-in-string "\n" " " text)))))
   args)
 (advice-add 'flymake-make-diagnostic :filter-args
             #'lean4--flymake-diag-compat)
