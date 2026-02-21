@@ -142,14 +142,29 @@
                                                      lean4-fringe-fringe-goals-accomplished-face)))
               (overlay-put ov 'help-echo "goals accomplished ✓"))))))))
 
-(defun lean4-fringe-store-goals-accomplished (diagnostics)
-  "Store goals-accomplished diagnostics from DIAGNOSTICS."
-  (setq lean4-fringe-goals-accomplished-data
-        (seq-filter
-         (lambda (diag)
-           (let ((tags (cl-getf diag :leanTags)))
-             (and tags (seq-contains-p tags lean4-fringe-lean-tag-goals-accomplished))))
-         diagnostics)))
+(defvar-local lean4-fringe-goals-accomplished-delay-timer nil)
+
+(defun lean4-fringe-update-goals-accomplished (server diagnostics uri)
+  "Filter and store goals-accomplished DIAGNOSTICS, then schedule overlay update.
+SERVER is the eglot server, URI is the file URI.
+The overlay update is debounced to avoid excessive redisplay."
+  (lean4-with-uri-buffers server uri
+    (setq lean4-fringe-goals-accomplished-data
+          (seq-filter
+           (lambda (diag)
+             (let ((tags (cl-getf diag :leanTags)))
+               (and tags (seq-contains-p tags lean4-fringe-lean-tag-goals-accomplished))))
+           diagnostics))
+    (unless (and lean4-fringe-goals-accomplished-delay-timer
+                 (memq lean4-fringe-goals-accomplished-delay-timer timer-list))
+      (setq lean4-fringe-goals-accomplished-delay-timer
+            (run-at-time 0.3 nil
+                         (lambda (buf)
+                           (when (buffer-live-p buf)
+                             (with-current-buffer buf
+                               (lean4-fringe-update-goals-accomplished-overlays)
+                               (setq lean4-fringe-goals-accomplished-delay-timer nil))))
+                         (current-buffer))))))
 
 (provide 'lean4-fringe)
 ;;; lean4-fringe.el ends here

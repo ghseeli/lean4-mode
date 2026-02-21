@@ -330,15 +330,13 @@ Invokes `lean4-mode-hook'."
     (setq lean4--diagnostics-pending nil)
     (lean4-with-uri-buffers server uri
       (lean4-info-buffer-refresh)
-      (flymake-start)
-      (lean4-fringe-update-goals-accomplished-overlays))))
+      (flymake-start))))
 
 (cl-defmethod eglot-handle-notification :after ((server lean4-eglot-lsp-server)
                                                 (_method (eql textDocument/publishDiagnostics))
                                                 &key uri diagnostics &allow-other-keys)
   "Handle notification textDocument/publishDiagnostics."
-  (lean4-with-uri-buffers server uri
-    (lean4-fringe-store-goals-accomplished diagnostics))
+  (lean4-fringe-update-goals-accomplished server diagnostics uri)
   (unless lean4--diagnostics-pending
     (setq lean4--diagnostics-pending t)
     (run-with-timer 0.05 nil #'lean4--handle-diagnostics server uri)))
