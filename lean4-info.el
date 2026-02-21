@@ -137,6 +137,10 @@ The buffer is supposed to be the *Lean Goal* buffer."
                 (eglot--dbind ((Range) start) range
                   (eglot--dbind ((Position) line character) start
                     (magit-insert-heading (format "%d:%d" (1+ line) character))
+                    ;; Defensive: MESSAGE is normally a string, but
+                    ;; Eglot 1.17+ may hand us a non-string (list)
+                    ;; before the compat advice has run (see
+                    ;; `lean4--flymake-diag-compat' in lean4-mode.el).
                     (insert (if (stringp message)
                                 message
                               (format "%s" message))

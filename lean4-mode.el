@@ -287,20 +287,58 @@ Invokes `lean4-mode-hook'."
 ;;;###autoload
 (modify-coding-system-alist 'file "\\.lean\\'" 'utf-8)
 
-;; Compatibility fix: Eglot 1.17+ stores flymake diagnostic text as a
-;; list (SOURCE CODE MESSAGE), but flymake expects a string.
-;; Without this, `flymake-show-buffer-diagnostics' and the
-;; eglot-flymake-backend fail with `wrong-type-argument stringp'.
+;; Compatibility shim: Eglot 1.17+ / Flymake diagnostic TEXT mismatch
+;;
+;; `flymake-make-diagnostic' has the signature
+;;   (LOCUS BEG END TYPE TEXT &optional DATA OVERLAY-PROPERTIES)
+;; and its display code (e.g. `flymake--diagnostics-buffer-entries') assumes
+;; TEXT is a plain string.
+;;
+;; Eglot 1.17+ changed the value it passes for TEXT from a string to a
+;; structured list of the form (SOURCE CODE MESSAGE), where SOURCE is the
+;; diagnostic source name (e.g. "lean4"), CODE is the diagnostic code, and
+;; MESSAGE is the human-readable diagnostic string.
+;;
+;; Because Flymake's display routines call `replace-regexp-in-string' and
+;; similar string functions on TEXT, passing a list causes
+;; `wrong-type-argument stringp' errors that disable `eglot-flymake-backend'
+;; entirely and break `flymake-show-buffer-diagnostics'.
+;;
+;; The fix below uses a `:filter-args' advice on `flymake-make-diagnostic'.
+;; A `:filter-args' advice receives the full argument list as a single list
+;; value and returns the (possibly modified) argument list that will be
+;; forwarded to the original function.  When the TEXT argument (index 4) is
+;; a cons cell—indicating the Eglot 1.17+ list format—we extract the
+;; MESSAGE element (index 2 of that list) and substitute it back as a plain
+;; string, which is what Flymake expects.
+
 (defun lean4--flymake-diag-compat (args)
-  "Ensure TEXT argument to `flymake-make-diagnostic' is a string."
+  "Normalize the TEXT arg of `flymake-make-diagnostic' to a string.
+
+This is a `:filter-args' advice.  ARGS is the full argument list
+  (LOCUS BEG END TYPE TEXT &optional DATA OVERLAY-PROPERTIES).
+TEXT (index 4) should be a string, but Eglot 1.17+ may supply a list
+of the form (SOURCE CODE MESSAGE).  When TEXT is a cons, replace it
+with the MESSAGE element (index 2) so Flymake can display it."
   (let ((text (nth 4 args)))
     (when (and text (consp text))
-      ;; Extract the MESSAGE element from the (SOURCE CODE MESSAGE) list.
+      ;; TEXT is (SOURCE CODE MESSAGE); extract MESSAGE (index 2).
       (setcar (nthcdr 4 args)
               (or (nth 2 text) ""))))
   args)
-(advice-add 'flymake-make-diagnostic :filter-args
-            #'lean4--flymake-diag-compat)
+
+(defun lean4--flymake-diag-compat-enable ()
+  "Install the `lean4--flymake-diag-compat' advice."
+  (advice-add 'flymake-make-diagnostic :filter-args
+              #'lean4--flymake-diag-compat))
+
+(defun lean4--flymake-diag-compat-disable ()
+  "Remove the `lean4--flymake-diag-compat' advice."
+  (advice-remove 'flymake-make-diagnostic
+                 #'lean4--flymake-diag-compat))
+
+;; Install the advice when this file is loaded.
+(lean4--flymake-diag-compat-enable)
 
 ;; Eglot init
 (defun lean4--server-class-init (&optional _interactive)
