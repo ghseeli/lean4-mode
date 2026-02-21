@@ -137,7 +137,10 @@ The buffer is supposed to be the *Lean Goal* buffer."
                 (eglot--dbind ((Range) start) range
                   (eglot--dbind ((Position) line character) start
                     (magit-insert-heading (format "%d:%d" (1+ line) character))
-                    (insert message "\n")))))))))))
+                    (insert (if (stringp message)
+                                message
+                              (format "%s" message))
+                            "\n")))))))))))
 
 (defmacro lean4-info--split (head tail predicate)
   (declare (indent 2)
