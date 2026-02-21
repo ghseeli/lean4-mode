@@ -116,6 +116,9 @@
 
 (defvar-local lean4-fringe-goals-accomplished-data nil)
 
+(defconst lean4-fringe-lean-tag-goals-accomplished 2
+  "Value of the GoalsAccomplished tag in Lean diagnostics leanTags.")
+
 (defun lean4-fringe-update-goals-accomplished-overlays ()
   "Update goals accomplished checkmarks in the current buffer."
   (dolist (ov (flatten-tree (overlay-lists)))
@@ -145,7 +148,7 @@
         (seq-filter
          (lambda (diag)
            (let ((tags (cl-getf diag :leanTags)))
-             (and tags (seq-contains-p tags 2))))
+             (and tags (seq-contains-p tags lean4-fringe-lean-tag-goals-accomplished))))
          diagnostics)))
 
 (provide 'lean4-fringe)
