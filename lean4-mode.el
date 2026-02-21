@@ -334,8 +334,9 @@ Invokes `lean4-mode-hook'."
 
 (cl-defmethod eglot-handle-notification :after ((server lean4-eglot-lsp-server)
                                                 (_method (eql textDocument/publishDiagnostics))
-                                                &key uri &allow-other-keys)
+                                                &key uri diagnostics &allow-other-keys)
   "Handle notification textDocument/publishDiagnostics."
+  (lean4-fringe-update-goals-accomplished server diagnostics uri)
   (unless lean4--diagnostics-pending
     (setq lean4--diagnostics-pending t)
     (run-with-timer 0.05 nil #'lean4--handle-diagnostics server uri)))
