@@ -83,6 +83,22 @@ This yields the setup:
 | <kbd>C-c C-d</kbd> | restart Lean server for current file |
 | <kbd>C-c C-i</kbd> | toggle goal/messages buffer          |
 
+Two additional commands are available (suggested bindings shown):
+```elisp
+(keymap-set lean4-mode-map "C-c C-s" #'lean4-apply-simp-suggestion)
+(keymap-set lean4-mode-map "C-c M-s" #'lean4-apply-simp-suggestion-whole-buffer)
+```
+| Key                | Function                             |
+|--------------------|--------------------------------------|
+| <kbd>C-c C-s</kbd> | replace `simp` at point via `simp?`  |
+| <kbd>C-c M-s</kbd> | replace all `simp` in buffer via `simp?` |
+
+`lean4-apply-simp-suggestion` replaces the plain `simp` tactic on the current
+line with the `simp only [...]` suggestion returned by the Lean language server.
+`lean4-apply-simp-suggestion-whole-buffer` does the same for every plain `simp`
+in the buffer (excluding `simp only`, `simp?`, and `simp_*` variants).  Both
+commands are also accessible from the **Lean 4** menu.
+
 Diagnostics are provided via Flymake (through Eglot). Use `next-error` / `previous-error`
 (e.g. <kbd>M-g n</kbd> / <kbd>M-g p</kbd>) to navigate them.
 
