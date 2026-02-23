@@ -48,6 +48,7 @@
 (require 'lean4-syntax)
 (require 'lean4-info)
 (require 'lean4-fringe)
+(require 'lean4-tactic)
 
 ;; Silence byte-compiler
 (defvar markdown-code-lang-modes)
@@ -93,6 +94,8 @@ tab completion (if configured)."
   `("Lean 4"
     ["Toggle info display"  lean4-toggle-info                  t]
     ["List of errors"       flymake-show-buffer-diagnostics flymake-mode]
+    ["Replace simp at point" lean4-apply-simp-suggestion      t]
+    ["Replace simp in buffer" lean4-apply-simp-suggestion-whole-buffer t]
     ["Restart lean process" eglot-reconnect                    t]
     ["Customize lean4-mode" (customize-group 'lean)            t]
     ["Show keystroke for symbol" quail-show-key            t]))
